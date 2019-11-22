@@ -75,7 +75,7 @@ class system():
         for i in range(3):
             mask = ~np.eye(self.N, dtype='bool')
             pair_dist = np.subtract.outer(self.x[i], self.x[i])[mask].reshape(self.N, -1)
-            self.g[i, :] = np.sum(pair_dist/(pair_dist**3 + self.c**3), axis=1) 
+            self.g[i, :] = -np.sum(pair_dist/(pair_dist**3 + self.c**3), axis=1) 
  
 
     def step(self, dt, integrator):
@@ -108,4 +108,5 @@ class system():
             self.v = v0 + g0*dt
         else:
             raise NameError('Integrator {} not implemented'.format(ic_type))
+        self.t = self.t + dt
         self.calc_g() 
