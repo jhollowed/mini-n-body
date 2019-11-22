@@ -1,0 +1,11 @@
+# The parameters for the "standard model", or "model 1" in Peebles 1970 paper on 
+# modelling the spherical collapse of the Coma cluster
+# see https://ui.adsabs.harvard.edu/abs/1970AJ.....75...13P/abstract
+
+---
+N : 300                    # number of particles
+epsilon : 0.015            # dimensionless smoothing length
+alpha : 3.2                # length scale in Mpc/h
+Beta : 1.23e18             # time scale in sec
+
+
