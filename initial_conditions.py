@@ -20,7 +20,7 @@ def cold_spherical_collapse(N):
     3xN matrix of particle velocities (zeros)
     """
     
-    # spherical
+    # uniform spherical
     u = np.random.uniform(size=N)
     v = np.random.uniform(size=N)
     phi = u * 2*np.pi

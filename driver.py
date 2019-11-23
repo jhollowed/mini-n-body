@@ -49,6 +49,8 @@ class simulation:
         c = self.params['epsilon']
         self.system = bodies.system(self._N, c, integrator, initial_conditions)
         
+        # these will be Tx3xN 3d matrices, where T is the number of timesteps (3 is for x,y,z)
+        # -- see self.run() below
         self._x = None
         self._v = None
         self._u = None
@@ -71,7 +73,7 @@ class simulation:
         """
         Runs the simulation for the desired number of time steps, spaced uniformly from 0 to T. 
         This works by repeatedly calling bodies.system.step(). On each step, the new particle 
-        positions are written to the next entry in the third dimension of a 3xNx(tsteps) numpy array, 
+        positions are written to the next entry in the third dimension of a (tsteps)x3xN numpy array, 
         and likewise for the velocities.
 
         Parameters
@@ -81,14 +83,16 @@ class simulation:
         tsteps : int
             The number of timesteps to take.
         """
+
+        # "initialize 3d position, velocity, energy matrices" 
         self._x = np.zeros((tsteps, 3, self._N))
         self._v = np.zeros((tsteps, 3, self._N))
         self._u = np.zeros(tsteps)
         self._k = np.zeros(tsteps)
-        self._E = np.zeros(tsteps)
         self._t = np.linspace(0, T, tsteps)
         dt = np.diff(self._t)[0]
         
+        # the magic
         for i in range(tsteps):
             self.system.step(dt)
             self._x[i,:,:] = self.system.x
