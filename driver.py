@@ -8,7 +8,7 @@ import visualization
 import initial_conditions
 
 class simulation:
-    def __init__(self, param_file, initial_conditions, boundary_condition):
+    def __init__(self, param_file, integrator, initial_conditions):
         """
         This class prepares an environment for running an n-body simulation, setting the input
         parameters, initial conditions, creating the n-body system, and advancing the time stepper.
@@ -24,18 +24,17 @@ class simulation:
             - (optional) Beta: the physical time scale to convert dimensionles times
             If the last two parameters are not provieded, they will be to 1. The final parameter
             from Peebles is inferred as gamma = alpha/beta.
+        integrator : string
+            Integrator to use. Options are:
+            - "KDK": uses the kick-drift-kick leapfrog integrator
+            - "euler": uses a standard Euler integrator
+            - Maybe more one day        
         initial_condition : string
             The model to use for the initial conditiosn. Options are:
-            - 'spherical_collapse': particles will represent a discrete realization of a 
-              spherically symmetric region with uniform denisty.
+            - 'cold_spherical_collapse': particles will represent a discrete realization of a 
+              spherically symmetric region with uniform denisty, and zero kinetic energy.
             - Maybe more some day
-            Defaults to 'spherical_collapse'.
-        boundary_condition : string
-            Type of boundary conditions to use. Options are:
-            - 'open': there is no defined "box", are particles that reach escape velcoity 
-              are always retained without bound on their separation from the center of the system
-            - Maybe more some day
-            Defaults to 'open'.
+            Defaults to 'cold_spherical_collapse'.
 
         Attributes
         ----------
@@ -47,11 +46,14 @@ class simulation:
         self.params = None
         self._loadParams(param_file)
         self._N = self.params['N']
-        self._c = self.params['epsilon']
+        c = self.params['epsilon']
+        self.system = bodies.system(self._N, c, integrator, initial_conditions)
+        
         self._x = None
         self._v = None
+        self._u = None
+        self._k = None
         self._t = None
-        self.system = bodies.system(self._N, self._c, initial_conditions, boundary_condition)
 
 
     def _loadParams(self, param_file):
@@ -81,13 +83,19 @@ class simulation:
         """
         self._x = np.zeros((tsteps, 3, self._N))
         self._v = np.zeros((tsteps, 3, self._N))
+        self._u = np.zeros(tsteps)
+        self._k = np.zeros(tsteps)
+        self._E = np.zeros(tsteps)
         self._t = np.linspace(0, T, tsteps)
         dt = np.diff(self._t)[0]
         
         for i in range(tsteps):
-            self.system.step(dt, integrator='euler')
+            self.system.step(dt)
             self._x[i,:,:] = self.system.x
             self._v[i,:,:] = self.system.v
+            self._u[i] = self.system.u
+            self._k[i] = self.system.k
+            self._E[i] = self.system.E
     
 
     def visualize(self, out_dir, style='movie', show=True):
@@ -104,7 +112,7 @@ class simulation:
             Whether or not to display the plots rather than just saving to file.
         """
         if(style == 'movie'):
-            visualization.animate_collapse(self._x, out_dir)
+            visualization.animate_collapse(self._x, self._k/self._u, self._t, out_dir)
 
 
     def write_out(self, out_dir, scale = False):
@@ -136,12 +144,12 @@ class simulation:
 
 def Peebles1970():
     """
-    Runs a simulation using the parameters from Peebles 1970
+    Runs a simulation using the parameters from the "standard" model, or "model 1"
+    from Peebles 1970:
+    https://ui.adsabs.harvard.edu/abs/1970AJ.....75...13P/abstract
     """
     params = 'model_parameters/peebles1970_standard.yaml'
-    sim = simulation(params, 'spherical_collapse', 'open')
-    sim.run(0.3, 100)
-    sim.visualize(out_dir = './img_out')
-
-
-    
+    sim = simulation(params, integrator = 'euler', 
+                     initial_conditions = 'cold_spherical_collapse')
+    sim.run(0.3, 400)
+    sim.visualize(out_dir = './img_out') 
